@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
 from datetime import datetime
 import json
 import subprocess
@@ -6,10 +8,11 @@ import sys
 def query(gerritURL, query):
     cmd = 'ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null '\
           '-p 29418 %s gerrit query --format=JSON --all-approvals %s' % (gerritURL, query)
-    output = subprocess.check_output(cmd.split(' '))
-    for line in output.split('\n'):
-        if line:
-            yield json.loads(line)
+    with open('/dev/null', 'w') as NULLOUT:
+        output = subprocess.check_output(cmd.split(' '), stderr=NULLOUT.fileno())
+        for line in output.split('\n'):
+            if line:
+                yield json.loads(line)
 
 class Change(object):
     def __init__(self, **kwargs):
@@ -100,12 +103,40 @@ class Approval(object):
     def __repr__(self):
         return '%s(%s:%s)' % (self.by, self.type, self.value)
 
-if __name__ == '__main__':
-    gen = query('gerrit.ovirt.org', 'status:open owner:%s' % sys.argv[1])
-    changes = [Change(**change) for change in gen]
-    changes = changes[:-1]
+def changesOf(owner):
+    output = query('gerrit.ovirt.org', 'status:open owner:%s' % owner)
+    information = [info for info in output]
+    queryInfo = information.pop()
+    changes = [Change(**change) for change in information]
     changes = sorted(changes, key=lambda change: change.lastUpdated)
+    print u'Results: %s(time: %sµs)' % (queryInfo['rowCount'],
+                                     queryInfo['runTimeMilliseconds'])
+    print '=================================================================='\
+          '==============\n'
     for change in changes:
         print '%r' % change
         for patchSet in change.patchSets:
             print '\t%r' % patchSet
+        print '\n'
+
+def awaitingReview(reviewer, reviewed=True):
+    output = query('gerrit.ovirt.org', 'status:open reviewer:%s' % reviewer)
+    information = [info for info in output]
+    queryInfo = information.pop()
+    changes = [Change(**change) for change in information]
+    changes = sorted(changes, key=lambda change: change.lastUpdated)
+    print u'Results: %s(time: %sµs)' % (queryInfo['rowCount'],
+                                     queryInfo['runTimeMilliseconds'])
+    print '=================================================================='\
+          '==============\n'
+    for change in changes:
+        if not change.patchSets[-1].approvals:
+            print '%r' % change
+            for patchSet in change.patchSets:
+                print '\t%r' % patchSet
+            print '\n'
+
+
+if __name__ == '__main__':
+    #changesOf(sys.argv[1])
+    awaitingReview(sys.argv[1])
