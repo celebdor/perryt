@@ -201,7 +201,7 @@ class Comment(object):
         if len(self.message) < 40:
             summary = self.message
         else:
-            summary = self.message + '...'
+            summary = self.message[:37] + '...'
         return '%s:%s: %s - %s' % (self.file, self.line, summary,
                                    self.reviewer)
 
