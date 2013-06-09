@@ -202,7 +202,7 @@ class Comment(object):
         if len(self.message) < 40:
             summary = self.message
         else:
-            summary = self.message[:37] + '...'
+            summary = self.message[:38] + u'…'
         return '%s:%s: %s - %s' % (self.file, self.line, summary,
                                    self.reviewer)
 
@@ -211,10 +211,11 @@ def execute_search(search, format_output):
     queryInfo = information.pop()
     changes = [Change(**change) for change in information]
     changes = sorted(changes, key=lambda change: change.lastUpdated)
-    print 'Results: %s(time: %sµs)' % (queryInfo['rowCount'],
+    print u'Results: %s(time: %sµs)' % (queryInfo['rowCount'],
                                      queryInfo['runTimeMilliseconds'])
     print '=' * 80 + '\n'
     format_output(changes)
+
 
 def owner(owner, patchsets=None, status=None):
     search = 'status:%s owner:%s' % (status or 'open', owner)
