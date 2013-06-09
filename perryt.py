@@ -64,27 +64,31 @@ class Owner(object):
     cache = set()
 
     @classmethod
-    def __get_cached(cls, name, email):
+    def __get_cached(cls, name, email, username):
         for obj in cls.cache:
-            if obj.name == name and obj.email == email:
+            if obj.name == name and obj.email == email and \
+                    obj.username == username:
                 return obj
         return None
 
-    def __new__(cls, name, email=None):
-        cached = cls.__get_cached(name, email)
+    def __new__(cls, name, email=None, username=None):
+        cached = cls.__get_cached(name, email, username)
         if cached:
             return cached
         return super(Owner, cls).__new__(cls)
 
-    def __init__(self, name, email=None):
+    def __init__(self, name, email=None, username=None):
         if self in self.cache:
             return
         self.name = name
         self.email = email
+        self.username = username
         self.cache.add(self)
 
     def __str__(self):
-        if self.email:
+        if self.username:
+            return self.username
+        elif self.email:
             return self.email[:self.email.index('@')]
         return self.name
 
@@ -113,7 +117,7 @@ class PatchSet(object):
     instances = dict()
 
     def __init__(self, number, revision, ref, uploader, createdOn=None,
-                 approvals=None, comments=None, change=None):
+                 approvals=None, comments=None, change=None, parents=None):
         self.number = int(number)
         self.revision = revision
         self.ref = ref
@@ -237,7 +241,7 @@ def reviewer(reviewer, patchsets=None, reviewed=None, verified=None,
     queryInfo = information.pop()
     changes = [Change(**change) for change in information]
     changes = sorted(changes, key=lambda change: change.lastUpdated)
-    print u'Results: %s(time: %sµs)' % (queryInfo['rowCount'],
+    print 'Results: %s(time: %sµs)' % (queryInfo['rowCount'],
                                      queryInfo['runTimeMilliseconds'])
     print '=================================================================='\
           '==============\n'
