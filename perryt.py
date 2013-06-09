@@ -192,7 +192,8 @@ class Approval(object):
 
 class Comment(object):
     def __init__(self, reviewer, line, message, file):
-        self.reviewer = Owner(**reviewer)
+        if reviewer:
+            self.reviewer = Owner(**reviewer)
         self.line = int(line)
         self.message = message
         self.file = file
