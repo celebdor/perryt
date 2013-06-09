@@ -20,6 +20,7 @@ def query(gerritURL, query):
 
 
 class Change(object):
+
     def __init__(self, **kwargs):
         for key, value in kwargs.iteritems():
             if key == 'owner':
@@ -48,6 +49,7 @@ class Change(object):
 
 
 class Dependency(object):
+
     def __init__(self, isCurrentPatchSet, revision, ref, id, number):
         self.up_to_date = isCurrentPatchSet
         self.revision = revision
@@ -103,9 +105,9 @@ class Owner(object):
             identifiers.append(self.email[:self.email.index('@')])
         identifiers.append(instance_name.replace(' ', '').lower())
         parts = instance_name.split()
-        identifiers.append(parts[0]+parts[-1])
-        identifiers.append(parts[0][0]+parts[-1])
-        identifiers.append(parts[0]+''.join(part[0] for part in parts[1:]))
+        identifiers.append(parts[0] + parts[-1])
+        identifiers.append(parts[0][0] + parts[-1])
+        identifiers.append(parts[0] + ''.join(part[0] for part in parts[1:]))
         identifiers.append(''.join(part[0] for part in parts))
         for word in identifiers:
             if word.startswith(name):
@@ -191,6 +193,7 @@ class Approval(object):
 
 
 class Comment(object):
+
     def __init__(self, reviewer, line, message, file):
         if reviewer:
             self.reviewer = Owner(**reviewer)
@@ -206,13 +209,14 @@ class Comment(object):
         return '%s:%s: %s - %s' % (self.file, self.line, summary,
                                    self.reviewer)
 
+
 def execute_search(search, format_output):
     information = list(query('gerrit.ovirt.org', search))
     queryInfo = information.pop()
     changes = [Change(**change) for change in information]
     changes = sorted(changes, key=lambda change: change.lastUpdated)
     print u'Results: %s(time: %sµs)' % (queryInfo['rowCount'],
-                                     queryInfo['runTimeMilliseconds'])
+                                        queryInfo['runTimeMilliseconds'])
     print '=' * 80 + '\n'
     format_output(changes)
 
@@ -236,7 +240,7 @@ def owner(owner, patchsets=None, status=None):
 
 def reviewer(reviewer, patchsets=None, reviewed=None, verified=None,
              status=None):
-    search  = 'status:%s reviewer:%s' % (status or 'open', reviewer)
+    search = 'status:%s reviewer:%s' % (status or 'open', reviewer)
 
     def format_output(changes):
         for change in changes:
@@ -261,7 +265,7 @@ def reviewer(reviewer, patchsets=None, reviewed=None, verified=None,
 
 
 def parseArgs(args):
-    return dict(args[i:i+2] for i in range(0, len(args)-1, 2))
+    return dict(args[i:i + 2] for i in range(0, len(args) - 1, 2))
 
 
 if __name__ == '__main__':
