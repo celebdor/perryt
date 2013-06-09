@@ -205,63 +205,57 @@ class Comment(object):
         return '%s:%s: %s - %s' % (self.file, self.line, summary,
                                    self.reviewer)
 
-def owner(owner, patchsets=None, status=None):
-    if status is None:
-        status = 'status:open'
-    else:
-        status = 'status:%s' % status
-    output = query('gerrit.ovirt.org', '%s owner:%s' % (status, owner))
-    information = [info for info in output]
+def execute_search(search, format_output):
+    information = list(query('gerrit.ovirt.org', search))
     queryInfo = information.pop()
     changes = [Change(**change) for change in information]
     changes = sorted(changes, key=lambda change: change.lastUpdated)
     print 'Results: %s(time: %sµs)' % (queryInfo['rowCount'],
                                      queryInfo['runTimeMilliseconds'])
-    print '=================================================================='\
-          '==============\n'
-    for change in changes:
-        print '%r' % change
-        print '\t%s' % change.url
-        if patchsets == 'all':
-            for patchSet in change.patchSets:
-                print '\t%r' % patchSet
-        else:
-            print '\t%r' % change.patchSets[-1]
-        print '\n'
+    print '=' * 80 + '\n'
+    format_output(changes)
+
+def owner(owner, patchsets=None, status=None):
+    search = 'status:%s owner:%s' % (status or 'open', owner)
+
+    def format_output(changes):
+        for change in changes:
+            print '%r' % change
+            print '\t%s' % change.url
+            if patchsets == 'all':
+                for patchSet in change.patchSets:
+                    print '\t%r' % patchSet
+            else:
+                print '\t%r' % change.patchSets[-1]
+            print '\n'
+
+    execute_search(search, format_output)
 
 
 def reviewer(reviewer, patchsets=None, reviewed=None, verified=None,
              status=None):
-    if status is None:
-        status = 'status:open'
-    else:
-        status = 'status:%s' % status
-    output = query('gerrit.ovirt.org', '%s reviewer:%s' % (status, reviewer))
-    information = [info for info in output]
-    queryInfo = information.pop()
-    changes = [Change(**change) for change in information]
-    changes = sorted(changes, key=lambda change: change.lastUpdated)
-    print 'Results: %s(time: %sµs)' % (queryInfo['rowCount'],
-                                     queryInfo['runTimeMilliseconds'])
-    print '=================================================================='\
-          '==============\n'
-    for change in changes:
-        if patchsets == 'last':
-            patchSets = [change.patchSets[-1]]
-        else:
-            patchSets = change.patchSets
-        if reviewed is not None:
-            patchSets = [patchSet for patchSet in patchSets if
-                         patchSet.reviewed(reviewed)]
-        if verified is not None:
-            patchSets = [patchSet for patchSet in patchSets if
-                         patchSet.verified(verified)]
-        if patchSets:
-            print '%r' % change
-            print '\t%s' % change.url
-            for patchSet in patchSets:
-                print '\t%r' % patchSet
-            print '\n'
+    search  = 'status:%s reviewer:%s' % (status or 'open', reviewer)
+
+    def format_output(changes):
+        for change in changes:
+            if patchsets == 'last':
+                patchSets = [change.patchSets[-1]]
+            else:
+                patchSets = change.patchSets
+            if reviewed is not None:
+                patchSets = [patchSet for patchSet in patchSets if
+                             patchSet.reviewed(reviewed)]
+            if verified is not None:
+                patchSets = [patchSet for patchSet in patchSets if
+                             patchSet.verified(verified)]
+            if patchSets:
+                print '%r' % change
+                print '\t%s' % change.url
+                for patchSet in patchSets:
+                    print '\t%r' % patchSet
+                print '\n'
+
+    execute_search(search, format_output)
 
 
 def parseArgs(args):
