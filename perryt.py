@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 from argparse import ArgumentParser
+from dateparser import parser as timedelta_parser
 from datetime import datetime
 import json
 import subprocess
@@ -223,26 +224,10 @@ def execute_search(search, format_output):
     format_output(changes)
 
 
-def owner(owner, patchsets=None, status=None):
+def owner(owner, patchsets=None, status=None, since=None):
     search = 'status:%s owner:%s' % (status or 'open', owner)
-
-    def format_output(changes):
-        for change in changes:
-            print '%r' % change
-            print '\t%s' % change.url
-            if patchsets == 'all':
-                for patchSet in change.patchSets:
-                    print '\t%r' % patchSet
-            else:
-                print '\t%r' % change.patchSets[-1]
-            print '\n'
-
-    execute_search(search, format_output)
-
-
-def reviewer(reviewer, patchsets=None, reviewed=None, verified=None,
-             status=None):
-    search = 'status:%s reviewer:%s' % (status or 'open', reviewer)
+    if since:
+        cut_date = datetime.now() - timedelta_parser.parse(since)
 
     def format_output(changes):
         for change in changes:
@@ -250,6 +235,34 @@ def reviewer(reviewer, patchsets=None, reviewed=None, verified=None,
                 patchSets = [change.patchSets[-1]]
             else:
                 patchSets = change.patchSets
+            if cut_date:
+                patchSets = [patchSet for patchSet in patchSets if
+                             cut_date <= patchSet.createdOn]
+            if patchSets:
+                print '%r' % change
+                print '\t%s' % change.url
+                for patchSet in patchSets:
+                    print '\t%r' % patchSet
+                print '\n'
+
+    execute_search(search, format_output)
+
+
+def reviewer(reviewer, patchsets=None, reviewed=None, verified=None,
+             status=None, since=None):
+    search = 'status:%s reviewer:%s' % (status or 'open', reviewer)
+    if since:
+        cut_date = datetime.now() - timedelta_parser.parse(since)
+
+    def format_output(changes):
+        for change in changes:
+            if patchsets == 'last':
+                patchSets = [change.patchSets[-1]]
+            else:
+                patchSets = change.patchSets
+            if cut_date:
+                patchSets = [patchSet for patchSet in patchSets if
+                             cut_date <= patchSet.createdOn]
             if reviewed is not None:
                 patchSets = [patchSet for patchSet in patchSets if
                              patchSet.reviewed(reviewed)]
@@ -294,6 +307,8 @@ if __name__ == '__main__':
     owner_parser.add_argument(
         '--status', choices=('open', 'reviewed', 'submitted', 'merged',
         'closed', 'abandoned'), default='open', help='The state of the change')
+    owner_parser.add_argument('--since', help='Human max age of the patch '
+                              'set, e.g. 1week,2days')
 
     rev_parser = subparsers.add_parser('reviewer')
     rev_parser.add_argument('reviewer', help='id of the reviewer of the patch '
@@ -308,6 +323,8 @@ if __name__ == '__main__':
                             'done by id.')
     rev_parser.add_argument('--verified', help='Filter results by '
                             'verifications done by id.')
+    rev_parser.add_argument('--since', help='Human max age of the patch '
+                            'set, e.g. 1week,2days')
 
     args = parser.parse_args()
     action = args.action
