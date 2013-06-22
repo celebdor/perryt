@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+from argparse import ArgumentParser
 from datetime import datetime
 import json
 import subprocess
@@ -264,17 +265,38 @@ def reviewer(reviewer, patchsets=None, reviewed=None, verified=None,
     execute_search(search, format_output)
 
 
-def parseArgs(args):
-    return dict(args[i:i + 2] for i in range(0, len(args) - 1, 2))
-
-
 if __name__ == '__main__':
-    if len(sys.argv) % 2 == 0:
-        print 'wrong usage'
-        sys.exit(1)
-    else:
-        opts = parseArgs(sys.argv[1:])
-    if opts.get('owner'):
-        owner(**opts)
-    elif opts.get('reviewer'):
-        reviewer(**opts)
+    parser = ArgumentParser()
+    subparsers = parser.add_subparsers(
+        title='actions', description='available gerrit actions.',
+        help='owner searches by owner and reviewer by reviewer.',
+        dest='action')
+
+    owner_parser = subparsers.add_parser('owner')
+    owner_parser.add_argument('owner', help='id of the owner of the patch set')
+    owner_parser.add_argument('--patchsets', choices=('all', 'last'),
+                              default='last', help='Whether to show all the '
+                              'patch sets for a change.')
+    owner_parser.add_argument(
+        '--status', choices=('open', 'reviewed', 'submitted', 'merged',
+        'closed', 'abandoned'), default='open', help='The state of the change')
+
+    rev_parser = subparsers.add_parser('reviewer')
+    rev_parser.add_argument('--patchsets', choices=('all', 'last'),
+                            default='last', help='Whether to show all the '
+                            'patch sets for a change.')
+    rev_parser.add_argument(
+        '--status', choices=('open', 'reviewed', 'submitted', 'merged',
+        'closed', 'abandoned'), default='open', help='The state of the change')
+    rev_parser.add_argument('--reviewed', help='Filter results by reviews '
+                            'done by id.')
+    rev_parser.add_argument('--verified', help='Filter results by '
+                            'verifications done by id.')
+
+    args = parser.parse_args()
+    action = args.action
+    delattr(args, 'action')
+    if action == 'owner':
+        owner(**vars(args))
+    elif action == 'reviewer':
+        reviewer(**vars(args))
