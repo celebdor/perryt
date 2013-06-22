@@ -25,4 +25,5 @@ Example for getting all the open changes and patchsets that have foobar as a rev
 - ssh gerrit.ovirt.org in your shell works (username is correct, key has been added to gerrit)
 
 ## Future work
-- It would be nice if the server was configurable and not hardcoded to gerrit.ovirt.org
+- It would be nice if the server was configurable and not hardcoded to gerrit.ovirt.org (DONE)
+- Integrate with pygit to provide gitlog and diff info.

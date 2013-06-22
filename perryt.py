@@ -5,13 +5,14 @@ from argparse import ArgumentParser
 from datetime import datetime
 import json
 import subprocess
-import sys
+import ConfigParser
 
 
 def query(gerritURL, query):
+    config = check_server()
     cmd = 'ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null '\
           '-p 29418 %s gerrit query --format=JSON --all-approvals --comments '\
-          '--dependencies %s' % (gerritURL, query)
+          '--dependencies %s' % (config.get('server', 'url'), query)
     with open('/dev/null', 'w') as NULLOUT:
         output = subprocess.check_output(cmd.split(' '),
                                          stderr=NULLOUT.fileno())
@@ -265,6 +266,19 @@ def reviewer(reviewer, patchsets=None, reviewed=None, verified=None,
     execute_search(search, format_output)
 
 
+def check_server():
+    CONF_FILE = 'perryt.cfg'
+    config = ConfigParser.RawConfigParser()
+    read = config.read(CONF_FILE)
+    if not read:
+        config.add_section('server')
+        server_url = raw_input('Enter the gerrit server url to save to '
+                               'perryt.cfg: ')
+        config.set('server', 'url', server_url)
+        with open(CONF_FILE, 'w') as conf:
+            config.write(conf)
+    return config
+
 if __name__ == '__main__':
     parser = ArgumentParser()
     subparsers = parser.add_subparsers(
@@ -282,6 +296,8 @@ if __name__ == '__main__':
         'closed', 'abandoned'), default='open', help='The state of the change')
 
     rev_parser = subparsers.add_parser('reviewer')
+    rev_parser.add_argument('reviewer', help='id of the reviewer of the patch '
+                            'set')
     rev_parser.add_argument('--patchsets', choices=('all', 'last'),
                             default='last', help='Whether to show all the '
                             'patch sets for a change.')
