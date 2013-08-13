@@ -121,12 +121,17 @@ class Owner(object):
 class PatchSet(object):
     instances = dict()
 
-    def __init__(self, number, revision, ref, uploader, createdOn=None,
-                 approvals=None, comments=None, change=None, parents=None):
+    def __init__(self, number, revision, ref, uploader, author=None,
+                 createdOn=None, approvals=None, comments=None, change=None,
+                 parents=None, sizeInsertions=None, sizeDeletions=None):
         self.number = int(number)
         self.revision = revision
         self.ref = ref
         self.uploader = Owner(**uploader)
+        if author:
+            self.author = Owner(**author)
+        else:
+            self.author = None
         if createdOn:
             self.createdOn = datetime.fromtimestamp(createdOn)
         if approvals:
@@ -135,6 +140,10 @@ class PatchSet(object):
             self.approvals = ()
         if comments:
             self.comments = [Comment(**comment) for comment in comments]
+        if sizeInsertions:
+            self.sizeInsertions = sizeInsertions
+        if sizeDeletions:
+            self.sizeDeletions = sizeDeletions
         self.change = change
         self.instances[self.ref] = self
 
@@ -182,7 +191,8 @@ class PatchSet(object):
 
 
 class Approval(object):
-    typeTrans = {'VRIF': 'v', 'CRVW': 'r', 'SUBM': 's'}
+    typeTrans = {'VRIF': 'v', 'CRVW': 'r', 'SUBM': 's', 'Code-Review': 'r',
+                 'Verified': 'v'}
 
     def __init__(self, type, value, grantedOn, by, description=None):
         self.type = self.typeTrans[type]
